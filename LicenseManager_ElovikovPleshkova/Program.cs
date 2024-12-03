@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LicenseManager_ElovikovPleshkova
@@ -19,6 +20,9 @@ namespace LicenseManager_ElovikovPleshkova
         static void Main(string[] args)
         {
             OnSettings();
+
+            Thread tCheckToken = new Thread(CheckToken);
+            tCheckToken.Start();
 
             while (true)
                 SetCommand();
@@ -109,6 +113,49 @@ namespace LicenseManager_ElovikovPleshkova
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Received connection token: " + ClientToken);
                 }
+            }
+        }
+
+        static void CheckToken()
+        {
+            while (true)
+            {
+                if (ClientToken != "")
+                {
+                    IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
+                    Socket Socket = new Socket(
+                        AddressFamily.InterNetwork,
+                        SocketType.Stream,
+                        ProtocolType.Tcp);
+
+                    try
+                    {
+                        Socket.Connect(EndPoint);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Error: " + ex.Message);
+                    }
+
+                    if (Socket.Connected)
+                    {
+                        Socket.Send(Encoding.UTF8.GetBytes(ClientToken));
+
+                        byte[] Bytes = new byte[10485760];
+                        int ByteRec = Socket.Receive(Bytes);
+
+                        string Responce = Encoding.UTF8.GetString(Bytes, 0, ByteRec);
+
+                        if (Responce == "/disconnect")
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("The client is disconnected from the server");
+                            ClientToken = String.Empty;
+                        }
+                    }
+                }
+                Thread.Sleep(1000);
             }
         }
 
