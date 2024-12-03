@@ -59,6 +59,13 @@ namespace LicenseManager_ElovikovPleshkova
             Console.WriteLine(" - show list users");
         }
 
+        static void GetStatus()
+        {
+            int Duration = (int)DateTime.Now.Subtract(ClientDateConnection).TotalSeconds;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"Client: {ClientToken}, time connection: {ClientDateConnection.ToString("HH:mm:ss dd.MM")}, duration: {Duration}");
+        }
+
         static void OnSettings()
         {
             string Path = Directory.GetCurrentDirectory() + "/.config";
