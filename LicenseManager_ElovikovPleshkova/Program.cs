@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -64,6 +65,51 @@ namespace LicenseManager_ElovikovPleshkova
             int Duration = (int)DateTime.Now.Subtract(ClientDateConnection).TotalSeconds;
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine($"Client: {ClientToken}, time connection: {ClientDateConnection.ToString("HH:mm:ss dd.MM")}, duration: {Duration}");
+        }
+
+        static void ConnectServer()
+        {
+            IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
+            Socket Socket = new Socket(
+                AddressFamily.InterNetwork,
+                SocketType.Stream,
+                ProtocolType.Tcp);
+
+            try
+            {
+                Socket.Connect(EndPoint);
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Error: " + ex.Message);
+            }
+
+            if (Socket.Connected)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Connection to server successful");
+
+                Socket.Send(Encoding.UTF8.GetBytes("/token"));
+
+                byte[] Bytes = new byte[10485760];
+                int ByteRec = Socket.Receive(Bytes);
+
+                string Responce = Encoding.UTF8.GetString(Bytes, 0, ByteRec);
+
+                if (Responce == "/limit")
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("There is not enough space on the license server");
+                }
+                else
+                {
+                    ClientToken = Responce;
+                    ClientDateConnection = DateTime.Now;
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Received connection token: " + ClientToken);
+                }
+            }
         }
 
         static void OnSettings()
