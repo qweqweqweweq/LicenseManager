@@ -18,7 +18,26 @@ namespace LicenseManager_ElovikovPleshkova
         static void Main(string[] args)
         {
             OnSettings();
+
+            while (true)
+                SetCommand();
         }
+
+        static void SetCommand()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            string Command =Console.ReadLine();
+
+            if (Command == "/config")
+            {
+                File.Delete(Directory.GetCurrentDirectory() + "/.config");
+                OnSettings();
+            }
+            else if (Command == "/connect") ConnectServer();
+            else if (Command == "/status") GetStatus();
+            else if (Command == "/help") Help();
+        }
+
 
         static void OnSettings()
         {
