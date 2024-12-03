@@ -17,6 +17,8 @@ namespace LicenseManager_ElovikovPleshkova
         static string ClientToken;
         static DateTime ClientDateConnection;
 
+        static HashSet<string> BlackList = new HashSet<string>();
+
         static void Main(string[] args)
         {
             OnSettings();
@@ -41,6 +43,11 @@ namespace LicenseManager_ElovikovPleshkova
             else if (Command == "/connect") ConnectServer();
             else if (Command == "/status") GetStatus();
             else if (Command == "/help") Help();
+            else if (Command == "/blacklist")
+            {
+                string tokenToBlacklist = Command.Substring("/blacklist ".Length).Trim();
+                AddBlackList(tokenToBlacklist);
+            }
         }
 
         static void Help()
@@ -64,6 +71,13 @@ namespace LicenseManager_ElovikovPleshkova
             Console.WriteLine(" - show list users");
         }
 
+        static void AddBlackList(string token)
+        {
+            BlackList.Add(token);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Client with token {token} added to blacklist");
+        }
+
         static void GetStatus()
         {
             int Duration = (int)DateTime.Now.Subtract(ClientDateConnection).TotalSeconds;
@@ -73,6 +87,12 @@ namespace LicenseManager_ElovikovPleshkova
 
         static void ConnectServer()
         {
+            if (BlackList.Contains(ClientToken))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Client in black list. Connection denied.");
+            }
+
             IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
             Socket Socket = new Socket(
                 AddressFamily.InterNetwork,
