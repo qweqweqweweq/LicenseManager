@@ -38,6 +38,26 @@ namespace LicenseManager_ElovikovPleshkova
             else if (Command == "/help") Help();
         }
 
+        static void Help()
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("Commands to the server: ");
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write("/config");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(" - set initial settings");
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write("/connect");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(" - connection to the server");
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write("/status");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(" - show list users");
+        }
 
         static void OnSettings()
         {
@@ -55,7 +75,7 @@ namespace LicenseManager_ElovikovPleshkova
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("Server address: ");
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(ServerIpAddress.Address.ToString());
+                Console.WriteLine(IpAddress);
 
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("Server port: ");
