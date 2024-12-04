@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Server.Classes;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -15,6 +16,7 @@ namespace Server
 		static int MaxClient;
 		static int Duration;
 		static List<Classes.Client> AllClients = new List<Classes.Client>();
+		static List<string> ClientBlacklist = new List<string>();
 		static void Main(string[] args)
 		{
 			OnSettings();
@@ -93,13 +95,49 @@ namespace Server
 					return "/limit";
 				}
 			}
+			else if (Command.Contains("/with token"))
+			{
+				if (AllClients.Count < MaxClient)
+				{
+					string Token = Command.Replace("/with token ", "");
+					Classes.Client newClient = new Classes.Client();
+					newClient.Token = Token;
+
+					if (CheckClientInBlacklist(newClient.Token))
+					{
+						Console.ForegroundColor = ConsoleColor.Red;
+						Console.WriteLine($"Connection failed. Client in blacklist");
+						return "/blacklist";
+					}
+
+					AllClients.Add(newClient);
+					Console.ForegroundColor = ConsoleColor.Green;
+					Console.WriteLine($"New client connection: " + newClient.Token);
+					return newClient.Token;
+				}
+				else
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine($"There is not enough space on the license server");
+					return "/limit";
+				}
+			}
 			else
 			{
 				Classes.Client Client = AllClients.Find(x => x.Token == Command);
+
 				return Client != null ? "/connect" : "/disconnect";
 			}
 
 			return null;
+		}
+		static bool CheckClientInBlacklist(string Token)
+		{
+			foreach (string token in ClientBlacklist)
+			{
+				if (token == Token) return true;
+			}
+			return false;
 		}
 		static void GetStatus()
 		{
@@ -124,8 +162,26 @@ namespace Server
 				OnSettings();
 			}
 			else if (Command.Contains("/disconnect")) DisconnecServer(Command);
+			else if (Command.Contains("/blacklist")) AddClientToBlacklist(Command);
+			else if (Command == "/check blacklist") CheckBlacklist();
 			else if (Command == "/status") GetStatus();
 			else if (Command == "/help") Help();
+		}
+		static void AddClientToBlacklist(string command)
+		{
+			try
+			{
+				string Token = command.Replace("/blacklist ", "");
+				ClientBlacklist.Add(Token);
+
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine($"Client: {Token} added to blacklist");
+			}
+			catch (Exception ex)
+			{
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine("Error: " + ex.Message);
+			}
 		}
 		static void DisconnecServer(string command)
 		{
@@ -142,6 +198,22 @@ namespace Server
 			{
 				Console.ForegroundColor = ConsoleColor.Red;
 				Console.WriteLine("Error: " + ex.Message);
+			}
+		}
+		static void CheckBlacklist()
+		{
+			if (ClientBlacklist.Count == 0)
+			{
+				Console.ForegroundColor = ConsoleColor.White;
+				Console.WriteLine($"There is no clients in blacklist");
+			}
+			else
+			{
+				foreach (string token in ClientBlacklist)
+				{
+					Console.ForegroundColor = ConsoleColor.White;
+					Console.WriteLine($"Client: {token} in blacklist");
+				}
 			}
 		}
 		static void OnSettings()

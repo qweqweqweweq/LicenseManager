@@ -15,8 +15,6 @@ namespace LicenseManager_ElovikovPleshkova
 		static string ClientToken;
 		static DateTime ClientDateConnection;
 
-		static HashSet<string> BlackList = new HashSet<string>();
-
 		static void Main(string[] args)
 		{
 			OnSettings();
@@ -39,13 +37,9 @@ namespace LicenseManager_ElovikovPleshkova
 				OnSettings();
 			}
 			else if (Command == "/connect") ConnectServer();
+			else if (Command.Contains("/connect with token")) ConnectServerWithToken(Command);
 			else if (Command == "/status") GetStatus();
 			else if (Command == "/help") Help();
-			else if (Command == "/blacklist")
-			{
-				string tokenToBlacklist = Command.Substring("/blacklist ".Length).Trim();
-				AddBlackList(tokenToBlacklist);
-			}
 		}
 
 		static void Help()
@@ -69,13 +63,6 @@ namespace LicenseManager_ElovikovPleshkova
 			Console.WriteLine(" - show list users");
 		}
 
-		static void AddBlackList(string token)
-		{
-			BlackList.Add(token);
-			Console.ForegroundColor = ConsoleColor.Red;
-			Console.WriteLine($"Client with token {token} added to blacklist");
-		}
-
 		static void GetStatus()
 		{
 			int Duration = (int)DateTime.Now.Subtract(ClientDateConnection).TotalSeconds;
@@ -85,12 +72,6 @@ namespace LicenseManager_ElovikovPleshkova
 
 		static void ConnectServer()
 		{
-			if (BlackList.Contains(ClientToken))
-			{
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("Client in black list. Connection denied.");
-			}
-
 			IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
 			Socket Socket = new Socket(
 					AddressFamily.InterNetwork,
@@ -124,6 +105,11 @@ namespace LicenseManager_ElovikovPleshkova
 					Console.ForegroundColor = ConsoleColor.Red;
 					Console.WriteLine("There is not enough space on the license server");
 				}
+				else if (Responce == "/blacklist")
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("This client in blacklist");
+				}
 				else
 				{
 					ClientToken = Responce;
@@ -133,7 +119,57 @@ namespace LicenseManager_ElovikovPleshkova
 				}
 			}
 		}
+		static void ConnectServerWithToken(string command)
+		{
+			IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
+			Socket Socket = new Socket(
+					AddressFamily.InterNetwork,
+					SocketType.Stream,
+					ProtocolType.Tcp);
 
+			try
+			{
+				Socket.Connect(EndPoint);
+			}
+			catch (Exception ex)
+			{
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine("Error: " + ex.Message);
+			}
+
+			if (Socket.Connected)
+			{
+				Console.ForegroundColor = ConsoleColor.Green;
+				Console.WriteLine("Connection to server successful");
+
+				string Token = command.Replace("/connect with token ", "");
+
+				Socket.Send(Encoding.UTF8.GetBytes("/with token " + Token));
+
+				byte[] Bytes = new byte[10485760];
+				int ByteRec = Socket.Receive(Bytes);
+
+				string Responce = Encoding.UTF8.GetString(Bytes, 0, ByteRec);
+
+				if (Responce == "/limit")
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("There is not enough space on the license server");
+				}
+				else if (Responce == "/blacklist")
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("This client in blacklist");
+				}
+				else
+				{
+					ClientToken = Responce;
+					ClientDateConnection = DateTime.Now;
+					Console.ForegroundColor = ConsoleColor.Green;
+					Console.WriteLine("Received connection token: " + ClientToken);
+				}
+			}
+		}
 		static void CheckToken()
 		{
 			while (true)
