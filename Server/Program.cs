@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 
 namespace Server
 {
@@ -11,39 +14,104 @@ namespace Server
 		static int ServerPort;
 		static int MaxClient;
 		static int Duration;
+		static List<Classes.Client> AllClients = new List<Classes.Client>();
 		static void Main(string[] args)
 		{
+			OnSettings();
 
+			Thread tListener = new Thread(ConnectServer);
+			tListener.Start();
+
+			Thread tDisconnect = new Thread(CheckDisconnectClient);
+			tDisconnect.Start();
+
+			while (true)
+			{
+				SetCommand();
+			}
+		}
+		static void CheckDisconnectClient()
+		{
+			while (true)
+			{
+				for (int iClient = 0; iClient < AllClients.Count; iClient++)
+				{
+					int ClientDuration = (int)DateTime.Now.Subtract(AllClients[iClient].DateConnect).TotalSeconds;
+
+					if (ClientDuration > Duration)
+					{
+						Console.ForegroundColor = ConsoleColor.Red;
+						Console.WriteLine($"Client: {AllClients[iClient].Token} disconnect from server due to timeout");
+
+						AllClients.RemoveAt(iClient);
+					}
+				}
+
+				Thread.Sleep(1000);
+			}
 		}
 		static void ConnectServer()
 		{
-			if (BlackList.Contains(ClientToken))
-			{
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("Client in black list. Connection denied.");
-			}
-
 			IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
-			Socket Socket = new Socket(
+			Socket SocketListener = new Socket(
 					AddressFamily.InterNetwork,
 					SocketType.Stream,
 					ProtocolType.Tcp);
+			SocketListener.Bind(EndPoint);
+			SocketListener.Listen(10);
 
-			try
+			while (true)
 			{
-				Socket.Connect(EndPoint);
+				Socket Handler = SocketListener.Accept();
+
+				byte[] Bytes = new byte[10485760];
+				int ByteRec = Handler.Receive(Bytes);
+
+				string Message = Encoding.UTF8.GetString(Bytes, 0, ByteRec);
+				string Response = SetCommandClient(Message);
+
+				Handler.Send(Encoding.UTF8.GetBytes(Response));
 			}
-			catch (Exception ex)
+		}
+		static string SetCommandClient(string Command)
+		{
+			if (Command == "/token")
 			{
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("Error: " + ex.Message);
+				if (AllClients.Count < MaxClient)
+				{
+					Classes.Client newClient = new Classes.Client();
+					AllClients.Add(newClient);
+					Console.ForegroundColor = ConsoleColor.Green;
+					Console.WriteLine($"New client connection: " + newClient.Token);
+
+					return newClient.Token;
+				}
+				else
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine($"There is not enough space on the license server");
+					return "/limit";
+				}
 			}
+			else
+			{
+				Classes.Client Client = AllClients.Find(x => x.Token == Command);
+				return Client != null ? "/connect" : "/disconnect";
+			}
+
+			return null;
 		}
 		static void GetStatus()
 		{
-			int Duration = (int)DateTime.Now.Subtract(ClientDateConnection).TotalSeconds;
 			Console.ForegroundColor = ConsoleColor.White;
-			Console.WriteLine($"Client: {ClientToken}, time connection: {ClientDateConnection.ToString("HH:mm:ss dd.MM")}, duration: {Duration}");
+			Console.WriteLine($"Count clients: {AllClients.Count}");
+
+			foreach (Classes.Client client in AllClients)
+			{
+				int Duration = (int)DateTime.Now.Subtract(client.DateConnect).TotalSeconds;
+				Console.ForegroundColor = ConsoleColor.White;
+				Console.WriteLine($"Client: {client.Token}, time connection: {client.DateConnect.ToString("HH:mm:ss dd.MM")}, duration: {Duration}");
+			}
 		}
 		static void SetCommand()
 		{
@@ -55,13 +123,25 @@ namespace Server
 				File.Delete(Directory.GetCurrentDirectory() + "/.config");
 				OnSettings();
 			}
-			else if (Command == "/connect") ConnectServer();
+			else if (Command.Contains("/disconnect")) DisconnecServer(Command);
 			else if (Command == "/status") GetStatus();
 			else if (Command == "/help") Help();
-			else if (Command == "/blacklist")
+		}
+		static void DisconnecServer(string command)
+		{
+			try
 			{
-				string tokenToBlacklist = Command.Substring("/blacklist ".Length).Trim();
-				AddBlackList(tokenToBlacklist);
+				string Token = command.Replace("/disconnect ", "");
+				Classes.Client DisconnectClient = AllClients.Find(x => x.Token == Token);
+				AllClients.Remove(DisconnectClient);
+
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine($"Client: {Token} disconnected from the server");
+			}
+			catch (Exception ex)
+			{
+				Console.ForegroundColor = ConsoleColor.Red;
+				Console.WriteLine("Error: " + ex.Message);
 			}
 		}
 		static void OnSettings()
@@ -145,9 +225,9 @@ namespace Server
 			Console.WriteLine(" - set initial settings");
 
 			Console.ForegroundColor = ConsoleColor.Green;
-			Console.Write("/connect");
+			Console.Write("/disconnect");
 			Console.ForegroundColor = ConsoleColor.White;
-			Console.WriteLine(" - connection to the server");
+			Console.WriteLine(" - disconnect users from the server");
 
 			Console.ForegroundColor = ConsoleColor.Green;
 			Console.Write("/status");

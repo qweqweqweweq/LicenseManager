@@ -51,7 +51,7 @@ namespace LicenseManager_ElovikovPleshkova
 		static void Help()
 		{
 			Console.ForegroundColor = ConsoleColor.White;
-			Console.WriteLine("Commands to the server: ");
+			Console.WriteLine("Commands to the clients: ");
 
 			Console.ForegroundColor = ConsoleColor.Green;
 			Console.Write("/config");
@@ -128,7 +128,7 @@ namespace LicenseManager_ElovikovPleshkova
 				{
 					ClientToken = Responce;
 					ClientDateConnection = DateTime.Now;
-					Console.ForegroundColor = ConsoleColor.Red;
+					Console.ForegroundColor = ConsoleColor.Green;
 					Console.WriteLine("Received connection token: " + ClientToken);
 				}
 			}
@@ -138,7 +138,7 @@ namespace LicenseManager_ElovikovPleshkova
 		{
 			while (true)
 			{
-				if (ClientToken != "")
+				if (!String.IsNullOrEmpty(ClientToken))
 				{
 					IPEndPoint EndPoint = new IPEndPoint(ServerIpAddress, ServerPort);
 					Socket Socket = new Socket(
