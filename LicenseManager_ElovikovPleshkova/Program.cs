@@ -37,7 +37,7 @@ namespace LicenseManager_ElovikovPleshkova
 				OnSettings();
 			}
 			else if (Command == "/connect") ConnectServer();
-			else if (Command.Contains("/connect with token")) ConnectServerWithToken(Command);
+			else if (Command.Contains("/connect with login")) ConnectServerWithToken(Command);
 			else if (Command == "/status") GetStatus();
 			else if (Command == "/help") Help();
 		}
@@ -110,6 +110,11 @@ namespace LicenseManager_ElovikovPleshkova
 					Console.ForegroundColor = ConsoleColor.Red;
 					Console.WriteLine("This client in blacklist");
 				}
+				else if (Responce == "/fake")
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("This client isn't in database");
+				}
 				else
 				{
 					ClientToken = Responce;
@@ -142,9 +147,9 @@ namespace LicenseManager_ElovikovPleshkova
 				Console.ForegroundColor = ConsoleColor.Green;
 				Console.WriteLine("Connection to server successful");
 
-				string Token = command.Replace("/connect with token ", "");
+				string Token = command.Replace("/connect with login ", "");
 
-				Socket.Send(Encoding.UTF8.GetBytes("/with token " + Token));
+				Socket.Send(Encoding.UTF8.GetBytes("/with login " + Token));
 
 				byte[] Bytes = new byte[10485760];
 				int ByteRec = Socket.Receive(Bytes);
@@ -160,6 +165,11 @@ namespace LicenseManager_ElovikovPleshkova
 				{
 					Console.ForegroundColor = ConsoleColor.Red;
 					Console.WriteLine("This client in blacklist");
+				}
+				else if (Responce == "/fake")
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine("This client isn't in database");
 				}
 				else
 				{

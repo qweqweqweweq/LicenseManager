@@ -5,6 +5,7 @@ namespace Server.Classes
 {
 	public class Client
 	{
+		public string Login { get; set; }
 		public string Token { get; set; }
 		public DateTime DateConnect { get; set; }
 		public Client()

@@ -1,5 +1,4 @@
-﻿using MySql.Data.MySqlClient;
-using Server.Classes;
+﻿using ServerWithDb.Classes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace Server
+namespace ServerWithDb
 {
 	internal class Program
 	{
@@ -96,24 +95,15 @@ namespace Server
 					return "/limit";
 				}
 			}
-			else if (Command.Contains("/with login"))
+			else if (Command.Contains("/with token"))
 			{
 				if (AllClients.Count < MaxClient)
 				{
-					string connStr = Command.Replace("/with login ", "");
-					string Login = connStr.Trim().Split(' ')[0];
-					string Password = connStr.Trim().Split(' ')[1];
+					string Token = Command.Replace("/with token ", "");
 					Classes.Client newClient = new Classes.Client();
-					newClient.Login = Login;
+					newClient.Token = Token;
 
-					if (!CheckClientInDatabase(newClient.Login, Password))
-					{
-						Console.ForegroundColor = ConsoleColor.Red;
-						Console.WriteLine($"Connection failed. Client isn't in database");
-						return "/fake";
-					}
-
-					if (CheckClientInBlacklist(newClient.Login))
+					if (CheckClientInBlacklist(newClient.Token))
 					{
 						Console.ForegroundColor = ConsoleColor.Red;
 						Console.WriteLine($"Connection failed. Client in blacklist");
@@ -141,25 +131,13 @@ namespace Server
 
 			return null;
 		}
-		static bool CheckClientInDatabase(string Login, string Password)
+		static bool CheckClientInBlacklist(string Token)
 		{
-			MySqlConnection connection = DBConnection.OpenConnection();
-			MySqlDataReader reader = DBConnection.Query($"SELECT * FROM users;", connection);
-			while (reader.Read())
+			foreach (string token in ClientBlacklist)
 			{
-				if (reader.GetValue(1).ToString() == Login && reader.GetValue(2).ToString() == Password)
-				{
-					DBConnection.CloseConnection(connection);
-					return true;
-				}
+				if (token == Token) return true;
 			}
-			DBConnection.CloseConnection(connection);
 			return false;
-		}
-		static bool CheckClientInBlacklist(string Login)
-		{
-			if (ClientBlacklist.Contains(Login)) return true;
-			else return false;
 		}
 		static void GetStatus()
 		{
@@ -193,11 +171,11 @@ namespace Server
 		{
 			try
 			{
-				string Login = command.Replace("/blacklist ", "");
-				ClientBlacklist.Add(Login);
+				string Token = command.Replace("/blacklist ", "");
+				ClientBlacklist.Add(Token);
 
 				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine($"Client: {Login} added to blacklist");
+				Console.WriteLine($"Client: {Token} added to blacklist");
 			}
 			catch (Exception ex)
 			{
